@@ -5,16 +5,14 @@
 #include <arpa/inet.h>
 #include "cpv.h"
 
-void scale_to_8bit(int *src_w, int *src_h) {
-    const int MAX_VAL = 80;
-
-    if (*src_w <= MAX_VAL && *src_h <= MAX_VAL) return;
+void scale_to_8bit(int *src_w, int *src_h, int max_val) {
+    if (*src_w <= max_val && *src_h <= max_val) return;
 
     double ratio;
     if (*src_w > *src_h) {
-        ratio = (double)MAX_VAL / *src_w;
+        ratio = (double)max_val / *src_w;
     } else {
-        ratio = (double)MAX_VAL / *src_h;
+        ratio = (double)max_val / *src_h;
     }
 
     *src_w = (int)(*src_w * ratio);
@@ -50,19 +48,18 @@ int get_video_dimensions(const char * filename, int * w, int * h) {
     return 0;
 }
 
-void build_header(CPV_Header * header, const char * filename) {
+void build_header(CPV_Header * header, const char * filename, int max_size, int fps) {
     header->magic[0] = 'C';
     header->magic[1] = 'P';
     
     int w, h;
     get_video_dimensions(filename, &w, &h);
-    scale_to_8bit(&w, &h);
+    scale_to_8bit(&w, &h, max_size);
 
     header->width = (uint8_t)w;
     header->height = (uint8_t)h;
     
     // Bit 4-7: Flags, Bit 0-3: FPS
-    uint8_t fps = 5;
     uint8_t flags = 0;
     header->fps_flags = (flags << 4) | (fps & 0x0F);
 
@@ -314,13 +311,29 @@ int build_video_data(CPV_VideoData * video_data, CPV_Header * header, CPV_ColorP
 }
 
 int main(int argc, char *argv[]) {
-    if (argc != 2) {
-        printf("Usage: ./cpv_convert <videofile>\n");
+    char * filename = NULL;
+    int max_size = 80;
+    int fps = 5;
+
+    for (int i = 1; i < argc; i++) {
+        if (strcmp(argv[i], "-max_size") == 0 && i + 1 < argc) {
+            max_size = atoi(argv[++i]);
+            if (max_size < 1) max_size = 1;
+            if (max_size > 255) max_size = 255;
+        } else if (strcmp(argv[i], "-fps") == 0 && i + 1 < argc) {
+            fps = atoi(argv[++i]);
+            if (fps < 1) fps = 1;
+            if (fps > 15) fps = 15;
+        } else {
+            filename = argv[i];
+        }
+    }
+
+    if (!filename || !(2 <= argc <= 6)) {
+        printf("Usage: %s <videofile> [-max_size <1-255>] [-fps <1-15>]\n", argv[0]);
         printf("Out: <videofile>.cpv\n");
         return -1;
     }
-
-    char * filename = argv[1];
     
     // collect meta data for my own format
     CPV_Header * header = malloc(sizeof(CPV_Header));
@@ -328,7 +341,7 @@ int main(int argc, char *argv[]) {
         fprintf(stderr, "Error: Failed to allocate memory for header\n");
         return -1;
     }
-    build_header(header, filename);
+    build_header(header, filename, max_size, fps);
     
     // get an optimal color palette
     CPV_ColorPalette * palette = malloc(sizeof(CPV_ColorPalette));
