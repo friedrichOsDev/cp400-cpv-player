@@ -1,2 +1,6 @@
 cpv_convert
-main.o
+cpv_player
+*.o
+*.mp4
+*.cpv
+*.png

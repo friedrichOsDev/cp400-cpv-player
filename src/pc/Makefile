@@ -1,21 +1,27 @@
-TARGET := cpv_convert
+TARGET := cpv_convert cpv_player
 
 CC := gcc
 CFLAGS := -I. -Wall -Wextra -O2
-LDFLAGS := -static
+LDFLAGS_STATIC := -static
+SDL_FLAGS := $(shell sdl2-config --cflags --libs)
 
-SOURCES := $(wildcard *.c)
-OBJECTS := $(SOURCES:.c=.o)
+MAIN_SOURCES := main.c
+MAIN_OBJECTS := $(MAIN_SOURCES:.c=.o)
+PLAYER_SOURCES := player.c
+PLAYER_OBJECTS := $(PLAYER_SOURCES:.c=.o)
 
 .PHONY: all clean
 
 all: $(TARGET)
 
-$(TARGET): $(OBJECTS)
-	$(CC) $(LDFLAGS) $(OBJECTS) -o $@
+cpv_convert: $(MAIN_OBJECTS)
+	$(CC) $(CFLAGS) -o $@ $^ $(LDFLAGS_STATIC)
+
+cpv_player: $(PLAYER_OBJECTS)
+	$(CC) $(CFLAGS) -o $@ $^ $(SDL_FLAGS)
 
 %.o: %.c
 	$(CC) $(CFLAGS) -c $< -o $@
 
 clean:
-	rm -f $(TARGET) $(OBJECTS)
+	rm -f $(TARGET) *.o
