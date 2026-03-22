@@ -329,7 +329,7 @@ int main(int argc, char *argv[]) {
         }
     }
 
-    if (!filename || !(2 <= argc <= 6)) {
+    if (!filename || argc < 2 || argc > 6) {
         printf("Usage: %s <videofile> [-max_size <1-255>] [-fps <1-15>]\n", argv[0]);
         printf("Out: <videofile>.cpv\n");
         return -1;
