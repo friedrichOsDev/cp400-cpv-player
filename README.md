@@ -10,7 +10,7 @@ This is a simple video player for the CASIO FX-CP400 using the custom .cpv forma
 
 ## Usage
 
-- Convert videos using `./cpv_convert <file>` (requires ffmpeg).
+- Convert videos using `./cpv_convert <file>` (requires `ffmpeg`). Preview created cpv files using `./cpv_player video.cpv`.
 - Launch `cpv_player.bin` via hollyhock-2.
 - Select a video from the dropdown and press **Load**.
 - **[SHIFT]**: Fast forward.
