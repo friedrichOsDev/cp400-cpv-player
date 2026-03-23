@@ -11,7 +11,7 @@
 APP_NAME("CPV Player")
 APP_DESCRIPTION("A simple video player using the custom .cpv format")
 APP_AUTHOR("friedrichOsDev")
-APP_VERSION("1.0.0")
+APP_VERSION("1.0.1")
 
 extern "C"
 int div(int n1, int n2) {
@@ -103,6 +103,13 @@ private:
 
 class CPVPlayer {
 public:
+	int scale;
+	bool rotation;
+	int offsetY;
+	int offsetX;
+	int LCD_WIDTH;
+	int LCD_HEIGHT;
+
 	CPVPlayer(const CPVs::cpv_t * cpv) {
 		LCD_GetSize(&LCD_WIDTH, &LCD_HEIGHT);
 		header = (CPVs::CPV_Header *)malloc(sizeof(CPVs::CPV_Header));
@@ -193,12 +200,6 @@ private:
 	CPVs::CPV_ColorPalette * palette = NULL;
 	CPVs::CPV_FrameHeader * frameHeader = NULL;
 	uint8_t * frameData = NULL;
-	int scale;
-	bool rotation;
-	int offsetY;
-	int offsetX;
-	int LCD_WIDTH;
-	int LCD_HEIGHT;
 
 	void calcVideoLayout() {
 		bool v_is_portrait = (header->height > header->width);
@@ -260,6 +261,62 @@ void main() {
 			getKey(&key1, &key2);
 			if (testKey(key1, key2, KEY_CLEAR)) {
 				quit = true;
+			} else if (testKey(key1, key2, KEY_KEYBOARD)) {
+				int pauseX = div(player->LCD_WIDTH, 2);
+				int pauseY = div(player->LCD_HEIGHT, 2);
+				int barWidth = 5 * player->scale;
+				int barHeight = 15 * player->scale;
+				int gap = 5 * player->scale;
+
+				uint16_t* backup = (uint16_t*)malloc(sizeof(uint16_t) * barHeight * (barWidth * 2 + gap));
+				int idx = 0;
+				for (int i = -barHeight / 2; i < barHeight / 2; i++) {
+					for (int j = -barWidth - gap / 2; j < gap / 2 + barWidth; j++) {
+						int px = player->rotation ? pauseX + i : pauseY + j;
+						int py = player->rotation ? pauseY + j : pauseX + i;
+						backup[idx++] = LCD_GetPixel(px, py);
+					}
+				}
+
+				for (int i = -barHeight / 2; i < barHeight / 2; i++) {
+					for (int j = -barWidth - gap / 2; j < -gap / 2; j++) {
+						if (player->rotation) {
+							LCD_SetPixel(pauseX + i, pauseY + j, 0xFFFF);
+						} else {
+							LCD_SetPixel(pauseX + j, pauseY + i, 0xFFFF);
+						}
+					}
+					for (int j = gap / 2; j < gap / 2 + barWidth; j++) {
+						if (player->rotation) {
+							LCD_SetPixel(pauseX + i, pauseY + j, 0xFFFF);
+						} else {
+							LCD_SetPixel(pauseX + j, pauseY + i, 0xFFFF);
+						}
+					}
+				}
+				LCD_Refresh();
+
+				while (true) {
+					getKey(&key1, &key2);
+					if (testKey(key1, key2, KEY_BACKSPACE)) break;
+					if (testKey(key1, key2, KEY_CLEAR)) {
+						quit = true;
+						break;
+					}
+				}
+
+				idx = 0;
+				for (int i = -barHeight / 2; i < barHeight / 2; i++) {
+					for (int j = -barWidth - gap / 2; j < gap / 2 + barWidth; j++) {
+						if (player->rotation) {
+							LCD_SetPixel(pauseX + i, pauseY + j, backup[idx++]);
+						} else {
+							LCD_SetPixel(pauseX + j, pauseY + i, backup[idx++]);
+						}
+					}
+				}
+				LCD_Refresh();
+				free(backup);
 			} else if (testKey(key1, key2, KEY_SHIFT)) {
 				break;
 			}
