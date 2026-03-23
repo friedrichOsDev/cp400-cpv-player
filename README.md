@@ -14,4 +14,6 @@ This is a simple video player for the CASIO FX-CP400 using the custom .cpv forma
 - Launch `cpv_player.bin` via hollyhock-2.
 - Select a video from the dropdown and press **Load**.
 - **[SHIFT]**: Fast forward.
+- **[KEYBOARD]**: Pause playback.
+- **[BACKSPACE]**: Resume playback.
 - **[CLEAR]**: Exit playback.
